@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma Educativa - Aplicaciones bajo Suscripción</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --accent: #f59e0b;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 3rem 1.5rem;
+            text-align: center;
+            border-bottom: 4px solid var(--primary);
+        }
+
+        .header-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .badge {
+            display: inline-block;
+            background-color: rgba(37, 99, 235, 0.2);
+            color: #93c5fd;
+            padding: 0.35rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(147, 197, 253, 0.3);
+        }
+
+        header h1 {
+            font-size: clamp(2rem, 4vw, 2.75rem);
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        header p {
+            font-size: clamp(1rem, 2vw, 1.15rem);
+            color: #cbd5e1;
+            font-weight: 300;
+        }
+
+        main {
+            flex: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+            width: 100%;
+        }
+
+        .instructions-card {
+            background-color: var(--card-bg);
+            border-left: 5px solid var(--accent);
+            padding: 1.75rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            margin-bottom: 3rem;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 1.25rem;
+            align-items: center;
+        }
+
+        .instructions-card i {
+            font-size: 2.25rem;
+            color: var(--accent);
+        }
+
+        .instructions-content h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+            color: var(--text-main);
+        }
+
+        .instructions-content p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-title i {
+            color: var(--primary);
+        }
+
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .app-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .app-card-header {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            padding: 1.5rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .app-card-header i {
+            font-size: 2.5rem;
+            color: var(--primary);
+        }
+
+        .app-card-body {
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .app-card-body h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .app-card-body p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            flex: 1;
+        }
+
+        .btn-access {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--primary);
+            color: white;
+            text-decoration: none;
+            padding: 0.75rem 1.25rem;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+            text-align: center;
+        }
+
+        .btn-access:hover {
+            background-color: var(--primary-dark);
+        }
+
+        footer {
+            background-color: #0f172a;
+            color: #94a3b8;
+            text-align: center;
+            padding: 2rem 1.5rem;
+            font-size: 0.9rem;
+            border-top: 1px solid #1e293b;
+        }
+
+        footer p {
+            margin-bottom: 0.4rem;
+        }
+
+        footer .legal {
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 640px) {
+            .instructions-card {
+                grid-template-columns: 1fr;
+                text-align: center;
+                justify-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <span class="badge">Portal Exclusivo</span>
+            <h1>Aplicaciones bajo Suscripción</h1>
+            <p>Herramientas digitales profesionales diseñadas exclusivamente para instructores y profesores.</p>
+        </div>
+    </header>
+
+    <main>
+        <div class="instructions-card">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <div class="instructions-content">
+                <h3>Instrucciones de Acceso</h3>
+                <p>Para ingresar y utilizar estas aplicaciones, es necesario contar con un <strong>código de acceso válido por el tiempo definido</strong>. Si aún no cuenta con su código o requiere renovación, por favor <strong>acuda con su promotor</strong>.</p>
+            </div>
+        </div>
+
+        <h2 class="section-title"><i class="fa-solid fa-cubes"></i> Aplicaciones Disponibles</h2>
+
+        <div class="apps-grid">
+            <!-- Aplicación 1 -->
+            <div class="app-card">
+                <div class="app-card-header">
+                    <i class="fa-solid fa-calculator"></i>
+                </div>
+                <div class="app-card-body">
+                    <h3>Acomodo Matemático</h3>
+                    <p>Plataforma interactiva especializada para el diseño, práctica y estructuración de ejercicios y secuencias matemáticas en el aula.</p>
+                    <a href="https://acomodomatematico.buenosmalosconsejos.com/" target="_blank" rel="noopener noreferrer" class="btn-access">
+                        Acceder a la Aplicación <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Aplicación 2 -->
+            <div class="app-card">
+                <div class="app-card-header">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                </div>
+                <div class="app-card-body">
+                    <h3>Cuadrícula Aula</h3>
+                    <p>Herramienta digital de apoyo docente orientada a la organización espacial, dinámicas de grupo y gestión de actividades de aprendizaje.</p>
+                    <a href="https://cuadriculaaula.buenosmalosconsejos.com/" target="_blank" rel="noopener noreferrer" class="btn-access">
+                        Acceder a la Aplicación <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Plataforma Educativa. Todos los derechos reservados.</p>
+        <p class="legal">Aplicaciones de uso exclusivo para instructores y profesores autorizados bajo suscripción.</p>
+    </footer>
+
+</body>
+</html>
