@@ -8,6 +8,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
+    <!-- SheetJS (Librería para exportar archivos Excel con múltiples pestañas) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     
     <style>
         .font-cinzel { font-family: 'Cinzel', serif; }
@@ -179,8 +181,8 @@
                 <button onclick="generarYGuardarLicencias()" id="btn-generate" class="flex-1 py-3 bg-indigo-500 hover:bg-indigo-400 active:bg-indigo-600 text-slate-950 font-black uppercase text-xs rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50">
                     ✨ Generar en Firestore
                 </button>
-                <button onclick="descargarCSV()" id="btn-csv" class="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-xl text-xs uppercase transition-all border border-slate-700 flex items-center gap-2 cursor-pointer">
-                    📥 Descargar CSV
+                <button onclick="descargarExcelCompleto()" id="btn-export" class="px-5 py-3 bg-emerald-700/80 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs uppercase transition-all border border-emerald-500/40 flex items-center gap-2 cursor-pointer">
+                    📊 Exportar Excel (Todas las Apps)
                 </button>
             </div>
         </div>
@@ -250,7 +252,6 @@
             document.getElementById('input-password').value = '';
         }
 
-        // Revisar si ya había iniciado sesión en esta pestaña
         window.addEventListener('DOMContentLoaded', () => {
             if (sessionStorage.getItem('hub_auth') === 'authenticated') {
                 document.getElementById('auth-screen').classList.add('hidden');
@@ -262,6 +263,7 @@
         const APP_CONFIG = {
             acomodo: {
                 name: 'Acomodo Matemático',
+                sheetName: 'Acomodo Matemático',
                 projectId: 'apps-educativas-suscripciones',
                 bodyBg: 'bg-[#050b14]',
                 cardBg: 'bg-[#0b1626]',
@@ -283,6 +285,7 @@
             },
             jeopardy: {
                 name: 'Jeopardy Live Show',
+                sheetName: 'Jeopardy Live Show',
                 projectId: 'jeopardyjrh',
                 bodyBg: 'bg-[#000533]',
                 cardBg: 'bg-[#000842]',
@@ -304,6 +307,7 @@
             },
             methaplan: {
                 name: 'Methaplan',
+                sheetName: 'Methaplan',
                 projectId: 'methaplan',
                 bodyBg: 'bg-slate-950',
                 cardBg: 'bg-slate-900',
@@ -325,6 +329,7 @@
             },
             reduccion: {
                 name: 'Reducción Cuadrícula',
+                sheetName: 'Reducción Cuadrícula',
                 projectId: 'reduccion-cuadricula-3f6b0',
                 bodyBg: 'bg-[#050b14]',
                 cardBg: 'bg-[#0b1626]',
@@ -366,14 +371,14 @@
             currentApp = appKey;
             const conf = APP_CONFIG[appKey];
 
-            // 1. Resetear estilos de pestañas
+            // Resetear estilos de pestañas
             ['acomodo', 'jeopardy', 'methaplan', 'reduccion'].forEach(key => {
                 const tab = document.getElementById(`tab-${key}`);
                 tab.className = "flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800/50";
             });
             document.getElementById(`tab-${appKey}`).className = `flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${conf.tabActive}`;
 
-            // 2. Modificar tema visual
+            // Modificar tema visual
             document.body.className = `${conf.bodyBg} text-slate-100 font-sans min-h-screen p-4 md:p-8 transition-colors duration-300`;
 
             const headerCard = document.getElementById('header-card');
@@ -391,7 +396,7 @@
             const tableWrapper = document.getElementById('table-wrapper');
             tableWrapper.className = `overflow-x-auto rounded-xl border ${conf.cardBorder}`;
 
-            // 3. Modificar textos, tags y botones
+            // Modificar textos, tags y botones
             document.getElementById('header-title').className = `text-2xl font-black text-white tracking-tight flex items-center gap-2 ${conf.fontClass}`;
             document.getElementById('header-tag').className = `text-xs px-2.5 py-1 ${conf.tagClass} rounded-full font-mono font-bold`;
             document.getElementById('header-tag').innerText = conf.name;
@@ -403,7 +408,6 @@
 
             document.getElementById('btn-generate').className = `flex-1 py-3 ${conf.btnColor} font-black uppercase text-xs rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50`;
 
-            // 4. Cambiar fondo de selects/inputs
             const selects = ['duration-select', 'quantity-input'];
             selects.forEach(id => {
                 const el = document.getElementById(id);
@@ -490,6 +494,20 @@
             }
         }
 
+        // Evalúa de manera uniforme si un documento está usado y quién lo usó
+        function analizarEstadoLicencia(l) {
+            const email = (l.usadoPor && typeof l.usadoPor === 'string' && l.usadoPor.trim() !== "") 
+                ? l.usadoPor.trim() 
+                : (l.usuario && typeof l.usuario === 'string' && l.usuario.trim() !== "" ? l.usuario.trim() : "");
+            
+            const isUsado = (l.usado === true) || 
+                            (l.usada === true) || 
+                            (email !== "") || 
+                            (l.activo === false && l.Activo === false);
+
+            return { isUsado, usuario: email };
+        }
+
         async function cargarLicencias() {
             if (!isFirebaseReady) return;
             const db = window.dbs[currentApp];
@@ -513,32 +531,16 @@
                     return;
                 }
 
-                const checkUsado = (l) => {
-                    const email = (l.usadoPor && typeof l.usadoPor === 'string' && l.usadoPor.trim() !== "") 
-                        ? l.usadoPor.trim() 
-                        : (l.usuario && typeof l.usuario === 'string' && l.usuario.trim() !== "" ? l.usuario.trim() : null);
-                    
-                    return (l.usado === true) || 
-                           (l.usada === true) || 
-                           (email !== null) || 
-                           (l.activo === false && l.Activo === false);
-                };
-
                 licenciasCache.sort((a, b) => {
-                    const aUsado = checkUsado(a) ? 1 : 0;
-                    const bUsado = checkUsado(b) ? 1 : 0;
+                    const aUsado = analizarEstadoLicencia(a).isUsado ? 1 : 0;
+                    const bUsado = analizarEstadoLicencia(b).isUsado ? 1 : 0;
                     return aUsado - bUsado;
                 });
 
                 tbody.innerHTML = licenciasCache.map(l => {
                     const codigoVal = l.codigo || l.id;
                     const fecha = l.createdAt?.toDate ? l.createdAt.toDate().toLocaleString() : 'Recién creado';
-                    
-                    const emailUsuario = (l.usadoPor && typeof l.usadoPor === 'string' && l.usadoPor.trim() !== "") 
-                        ? l.usadoPor.trim() 
-                        : (l.usuario && typeof l.usuario === 'string' && l.usuario.trim() !== "" ? l.usuario.trim() : null);
-
-                    const isUsado = checkUsado(l);
+                    const { isUsado, usuario: emailUsuario } = analizarEstadoLicencia(l);
 
                     const estadoBadge = isUsado 
                         ? `<div class="inline-flex flex-col items-start gap-1 py-1">
@@ -588,40 +590,96 @@
             }
         }
 
-        function descargarCSV() {
-            if (licenciasCache.length === 0) {
-                alert('No hay licencias para exportar en esta aplicación.');
+        // Descarga completa en formato Excel (.xlsx) con pestañas separadas y consolidadas
+        async function descargarExcelCompleto() {
+            if (!isFirebaseReady) {
+                alert('Firebase aún no está listo. Por favor espera unos segundos.');
                 return;
             }
 
-            const conf = APP_CONFIG[currentApp];
-            let csvContent = "";
+            const btnExport = document.getElementById('btn-export');
+            const originalText = btnExport.innerHTML;
+            btnExport.disabled = true;
+            btnExport.innerHTML = `⏳ Consultando bases de datos...`;
 
-            if (currentApp === 'methaplan') {
-                csvContent = "data:text/csv;charset=utf-8,Codigo,DuracionDias,Usada,Usuario,FechaCreacion\n";
-                licenciasCache.forEach(l => {
-                    const codigoVal = l.codigo || l.id;
-                    const fecha = l.createdAt?.toDate ? l.createdAt.toDate().toISOString() : '';
-                    const usr = l.usadoPor || l.usuario || '';
-                    csvContent += `${codigoVal},${l.duracionDias},${l.usada || false},${usr},${fecha}\n`;
+            try {
+                const fs = window.fs;
+                const appsKeys = ['acomodo', 'jeopardy', 'methaplan', 'reduccion'];
+                const allLicenciasGlobal = [];
+                const dataByApp = {};
+
+                // Consultar todas las colecciones en paralelo
+                for (const appKey of appsKeys) {
+                    const db = window.dbs[appKey];
+                    const appConf = APP_CONFIG[appKey];
+                    dataByApp[appKey] = [];
+
+                    try {
+                        const q = fs.query(fs.collection(db, "suscripciones"), fs.orderBy("createdAt", "desc"));
+                        const snap = await fs.getDocs(q);
+
+                        snap.forEach(docSnap => {
+                            const data = docSnap.data();
+                            const codigo = data.codigo || docSnap.id;
+                            const { isUsado, usuario } = analizarEstadoLicencia(data);
+                            const duracion = data.duracionDias === 9999 ? 'Permanente' : (data.duracionDias ? `${data.duracionDias} días` : 'N/A');
+                            const fechaCreacion = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString() : '';
+
+                            const rowItem = {
+                                "Código": codigo,
+                                "Aplicación": appConf.name,
+                                "Vigencia": duracion,
+                                "Estado": isUsado ? "Usada" : "Disponible",
+                                "Usado Por / Correo": usuario || (isUsado ? "Registrado (sin correo)" : "-"),
+                                "Fecha de Creación": fechaCreacion
+                            };
+
+                            allLicenciasGlobal.push(rowItem);
+                            dataByApp[appKey].push(rowItem);
+                        });
+                    } catch (err) {
+                        console.warn(`No se pudo leer la base de datos de ${appConf.name}:`, err);
+                    }
+                }
+
+                if (allLicenciasGlobal.length === 0) {
+                    alert('No se encontraron licencias en ninguna de las bases de datos.');
+                    return;
+                }
+
+                // Crear libro de trabajo con SheetJS
+                const wb = XLSX.utils.book_new();
+
+                // 1. Pestaña Consolidada: Todas las Aplicaciones
+                const wsGlobal = XLSX.utils.json_to_sheet(allLicenciasGlobal);
+                XLSX.utils.book_append_sheet(wb, wsGlobal, "Todas las Aplicaciones");
+
+                // 2. Pestañas individuales por cada aplicación (sin la columna redundante de aplicación)
+                appsKeys.forEach(appKey => {
+                    const appConf = APP_CONFIG[appKey];
+                    const specificData = dataByApp[appKey].map(item => ({
+                        "Código": item["Código"],
+                        "Vigencia": item["Vigencia"],
+                        "Estado": item["Estado"],
+                        "Usado Por / Correo": item["Usado Por / Correo"],
+                        "Fecha de Creación": item["Fecha de Creación"]
+                    }));
+
+                    const wsApp = XLSX.utils.json_to_sheet(specificData.length > 0 ? specificData : [{ "Información": "Sin licencias registradas" }]);
+                    XLSX.utils.book_append_sheet(wb, wsApp, appConf.sheetName.substring(0, 31)); // El estándar de Excel limita el nombre a 31 caracteres
                 });
-            } else {
-                csvContent = "data:text/csv;charset=utf-8,Codigo,DuracionDias,Usado,UsadoPor,FechaCreacion\n";
-                licenciasCache.forEach(l => {
-                    const codigoVal = l.id;
-                    const fecha = l.createdAt?.toDate ? l.createdAt.toDate().toISOString() : '';
-                    const isUsd = (l.usado === true) || (l.usadoPor && l.usadoPor.trim() !== '') || (l.activo === false);
-                    csvContent += `${codigoVal},${l.duracionDias},${isUsd},${l.usadoPor || ''},${fecha}\n`;
-                });
+
+                // Descargar archivo .xlsx
+                const fechaHoy = new Date().toISOString().slice(0, 10);
+                XLSX.writeFile(wb, `Reporte_Licencias_Completo_${fechaHoy}.xlsx`);
+
+            } catch (error) {
+                console.error("Error al exportar:", error);
+                alert('Hubo un error al generar el archivo Excel: ' + (error.message || error));
+            } finally {
+                btnExport.disabled = false;
+                btnExport.innerHTML = originalText;
             }
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `licencias_${currentApp}_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
         }
     </script>
 </body>
