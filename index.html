@@ -3,346 +3,626 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plataforma Educativa - Aplicaciones bajo Suscripción</title>
+    <title>Panel Central de Licencias</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome para iconos -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&display=swap" rel="stylesheet">
+    
     <style>
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --accent: #f59e0b;
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
-            --alert-bg: #fffbeb;
-            --alert-border: #f59e0b;
-        }
+        .font-cinzel { font-family: 'Cinzel', serif; }
+    </style>
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <!-- Firebase Modular Setup -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            line-height: 1.6;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
+        // 1. Configuración de Acomodo Matemático
+        const configAcomodo = {
+          apiKey: "AIzaSyCaQWffSlgpxCOdHTJWx7sdD2jHjvc7drQ",
+          authDomain: "apps-educativas-suscripciones.firebaseapp.com",
+          projectId: "apps-educativas-suscripciones",
+          storageBucket: "apps-educativas-suscripciones.firebasestorage.app",
+          messagingSenderId: "266465203983",
+          appId: "1:266465203983:web:83ba940bc2d180898b507a"
+        };
 
-        header {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            color: white;
-            padding: 3rem 1.5rem;
-            text-align: center;
-            border-bottom: 4px solid var(--primary);
-        }
+        // 2. Configuración de Jeopardy
+        const configJeopardy = {
+          apiKey: "AIzaSyDaeedSq8IQnifs3DutUGm4jRJmAnmhBSE",
+          authDomain: "jeopardyjrh.firebaseapp.com",
+          projectId: "jeopardyjrh",
+          storageBucket: "jeopardyjrh.firebasestorage.app",
+          messagingSenderId: "299331613996",
+          appId: "1:299331613996:web:a4667fcebc645394dbe889"
+        };
 
-        .header-container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
+        // 3. Configuración de Methaplan
+        const configMethaplan = {
+          apiKey: "AIzaSyAqaZGZDYqxmPYfaOVgDIYRi7eZx4CQ4YA",
+          authDomain: "methaplan.firebaseapp.com",
+          projectId: "methaplan",
+          storageBucket: "methaplan.firebasestorage.app",
+          messagingSenderId: "1056430443532",
+          appId: "1:1056430443532:web:3548dbae8bb25ed6ea3229"
+        };
 
-        .badge {
-            display: inline-block;
-            background-color: rgba(37, 99, 235, 0.2);
-            color: #93c5fd;
-            padding: 0.35rem 1rem;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1rem;
-            border: 1px solid rgba(147, 197, 253, 0.3);
-        }
+        // 4. Configuración de Reducción Cuadrícula
+        const configReduccion = {
+          apiKey: "AIzaSyACxGWJBhaeKo4lz015Lz691L4gpHLEHRtM",
+          authDomain: "reduccion-cuadricula-3f6b0.firebaseapp.com",
+          databaseURL: "https://reduccion-cuadricula-3f6b0-default-rtdb.firebaseio.com",
+          projectId: "reduccion-cuadricula-3f6b0",
+          storageBucket: "reduccion-cuadricula-3f6b0.firebasestorage.app",
+          messagingSenderId: "143509305132",
+          appId: "1:143509305132:web:8c8faaa929b39cda1cde89"
+        };
 
-        header h1 {
-            font-size: clamp(2rem, 4vw, 2.75rem);
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-        }
+        // Inicializaciones aisladas con alias
+        const appAcomodo = initializeApp(configAcomodo, "acomodoApp");
+        const appJeopardy = initializeApp(configJeopardy, "jeopardyApp");
+        const appMethaplan = initializeApp(configMethaplan, "methaplanApp");
+        const appReduccion = initializeApp(configReduccion, "reduccionApp");
 
-        header p {
-            font-size: clamp(1rem, 2vw, 1.15rem);
-            color: #cbd5e1;
-            font-weight: 300;
-        }
+        // Bases de datos independientes
+        window.dbs = {
+            acomodo: getFirestore(appAcomodo),
+            jeopardy: getFirestore(appJeopardy),
+            methaplan: getFirestore(appMethaplan),
+            reduccion: getFirestore(appReduccion)
+        };
 
-        main {
-            flex: 1;
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 3rem 1.5rem;
-            width: 100%;
-        }
+        // Métodos de Firestore exportados
+        window.fs = {
+            doc,
+            setDoc,
+            deleteDoc,
+            collection,
+            getDocs,
+            query,
+            orderBy,
+            serverTimestamp
+        };
 
-        .instructions-card {
-            background-color: var(--card-bg);
-            border-left: 5px solid var(--accent);
-            padding: 1.75rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            margin-bottom: 1.5rem;
-            display: grid;
-            grid-template-columns: auto 1fr;
-            gap: 1.25rem;
-            align-items: center;
-        }
+        window.firebaseModularReady = true;
+        window.dispatchEvent(new Event('firebase-hub-ready'));
+    </script>
+</head>
+<body id="app-body" class="bg-[#050b14] text-slate-100 font-sans min-h-screen p-4 md:p-8 transition-colors duration-300">
 
-        .instructions-card i {
-            font-size: 2.25rem;
-            color: var(--accent);
-        }
+    <!-- Pantalla de Bloqueo / Autenticación -->
+    <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-[#050b14] p-4">
+        <div class="w-full max-w-md bg-[#0b1626] border border-slate-800 rounded-2xl p-8 shadow-2xl text-center space-y-6">
+            <div class="w-16 h-16 bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-inner">
+                🔒
+            </div>
+            <div>
+                <h1 class="text-xl font-black text-white tracking-tight">Acceso Restringido</h1>
+                <p class="text-xs text-slate-400 mt-1">Introduce la contraseña maestra para gestionar licencias.</p>
+            </div>
+            <div class="space-y-3">
+                <input type="password" id="input-password" placeholder="Contraseña de acceso" 
+                    onkeydown="if(event.key === 'Enter') verificarPassword()"
+                    class="w-full px-4 py-3 bg-[#070f1b] border border-slate-700 focus:border-indigo-400 rounded-xl text-sm text-white focus:outline-none text-center tracking-widest placeholder:tracking-normal">
+                <p id="auth-error" class="text-rose-400 text-xs hidden">⚠️ Contraseña incorrecta. Inténtalo de nuevo.</p>
+            </div>
+            <button onclick="verificarPassword()" class="w-full py-3 bg-indigo-500 hover:bg-indigo-400 active:bg-indigo-600 text-slate-950 font-black uppercase text-xs rounded-xl transition-all shadow-lg cursor-pointer">
+                Desbloquear Panel
+            </button>
+        </div>
+    </div>
 
-        .instructions-content h3 {
-            font-size: 1.15rem;
-            font-weight: 600;
-            margin-bottom: 0.35rem;
-            color: var(--text-main);
-        }
+    <!-- Contenedor Principal (Protegido) -->
+    <div id="main-panel" class="max-w-4xl mx-auto space-y-6 hidden">
 
-        .instructions-content p {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-        }
+        <!-- Barra Superior con Botón de Salir -->
+        <div class="flex items-center justify-end">
+            <button onclick="cerrarSesion()" class="text-xs text-slate-400 hover:text-rose-400 flex items-center gap-1.5 transition-colors cursor-pointer bg-[#0b1626] px-3 py-1.5 rounded-lg border border-slate-800">
+                🔒 Cerrar Sesión
+            </button>
+        </div>
 
-        .important-notice {
-            background-color: var(--alert-bg);
-            border: 1px solid #fde68a;
-            border-left: 5px solid #d97706;
-            padding: 1.25rem 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 3rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-        }
+        <!-- Selector de Aplicaciones (Pestañas) -->
+        <div class="flex flex-wrap gap-2 p-1.5 bg-[#0b1626]/90 border border-slate-800 rounded-2xl shadow-xl backdrop-blur-md">
+            <button onclick="cambiarPestana('acomodo')" id="tab-acomodo" class="flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer bg-indigo-600 text-white shadow-lg">
+                🔢 Acomodo Mat.
+            </button>
+            <button onclick="cambiarPestana('jeopardy')" id="tab-jeopardy" class="flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800/50">
+                ⚡ Jeopardy Show
+            </button>
+            <button onclick="cambiarPestana('methaplan')" id="tab-methaplan" class="flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800/50">
+                🔑 Methaplan
+            </button>
+            <button onclick="cambiarPestana('reduccion')" id="tab-reduccion" class="flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800/50">
+                📐 Reducción Cuad.
+            </button>
+        </div>
 
-        .important-notice i {
-            color: #d97706;
-            font-size: 1.25rem;
-            margin-top: 0.2rem;
-        }
+        <!-- Cabecera Dinámica -->
+        <header id="header-card" class="bg-[#0b1626] border-2 border-indigo-500/40 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row justify-between items-center gap-4 transition-all">
+            <div>
+                <h1 id="header-title" class="text-2xl font-black text-white tracking-tight flex items-center gap-2">
+                    🔢 Generador de Licencias <span id="header-tag" class="text-xs px-2.5 py-1 bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 rounded-full font-mono font-bold">Acomodo Matemático</span>
+                </h1>
+                <p id="header-desc" class="text-xs text-slate-300 mt-1">Sincronizado con Firestore en <b>apps-educativas-suscripciones</b>.</p>
+            </div>
+            <div id="status-badge" class="px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl text-xs font-medium flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> Conectando...
+            </div>
+        </header>
 
-        .important-notice p {
-            font-size: 0.95rem;
-            color: #92400e;
-            font-weight: 500;
-            line-height: 1.5;
-        }
+        <!-- Formulario de Configuración de Códigos -->
+        <div id="form-card" class="bg-[#0b1626] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 transition-all">
+            <h2 id="form-title" class="text-sm font-bold uppercase tracking-wider text-indigo-400">Configurar Códigos</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Duración de la Licencia</label>
+                    <select id="duration-select" class="w-full px-4 py-2.5 bg-[#070f1b] border border-slate-700 focus:border-indigo-400 rounded-xl text-sm text-white focus:outline-none">
+                        <option value="5">Prueba (5 días)</option>
+                        <option value="30" selected>1 Mes (30 días)</option>
+                        <option value="90">3 Meses (90 días)</option>
+                        <option value="180">6 Meses (180 días)</option>
+                        <option value="365">1 Año (365 días)</option>
+                        <option value="9999">Permanente (Ilimitada)</option>
+                    </select>
+                </div>
 
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Cantidad de Códigos a Generar</label>
+                    <input type="number" id="quantity-input" min="1" max="50" value="5" class="w-full px-4 py-2.5 bg-[#070f1b] border border-slate-700 focus:border-indigo-400 rounded-xl text-sm text-white focus:outline-none">
+                </div>
+            </div>
 
-        .section-title i {
-            color: var(--primary);
-        }
+            <div class="flex flex-wrap gap-3 pt-2">
+                <button onclick="generarYGuardarLicencias()" id="btn-generate" class="flex-1 py-3 bg-indigo-500 hover:bg-indigo-400 active:bg-indigo-600 text-slate-950 font-black uppercase text-xs rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50">
+                    ✨ Generar en Firestore
+                </button>
+                <button onclick="descargarCSV()" id="btn-csv" class="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-xl text-xs uppercase transition-all border border-slate-700 flex items-center gap-2 cursor-pointer">
+                    📥 Descargar CSV
+                </button>
+            </div>
+        </div>
 
-        .apps-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 2rem;
-            margin-bottom: 3rem;
-        }
+        <!-- Tabla de Licencias Activas -->
+        <div id="table-card" class="bg-[#0b1626] border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 transition-all">
+            <div class="flex justify-between items-center">
+                <h2 id="table-title" class="text-sm font-bold uppercase tracking-wider text-indigo-400">Licencias en la Base de Datos</h2>
+                <button onclick="cargarLicencias()" id="btn-refresh" class="text-xs text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer">🔄 Actualizar Lista</button>
+            </div>
 
-        .app-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-        }
+            <div id="table-wrapper" class="overflow-x-auto rounded-xl border border-slate-800">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr id="table-head-row" class="bg-[#070f1b] text-slate-300 border-b border-slate-800">
+                            <th class="p-3">Código</th>
+                            <th class="p-3">Vigencia</th>
+                            <th class="p-3">Estado / Uso</th>
+                            <th class="p-3">Fecha de Creación</th>
+                            <th class="p-3 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="licenses-table-body" class="divide-y border-slate-800">
+                        <tr>
+                            <td colspan="5" class="p-6 text-center text-slate-400">Iniciando panel...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-        .app-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
+    </div>
 
-        .app-card-header {
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            padding: 1.5rem;
-            text-align: center;
-            border-bottom: 1px solid var(--border-color);
-        }
+    <!-- Lógica de Seguridad y Control del Panel -->
+    <script>
+        const MASTER_PASS = "Altair16";
+        let currentApp = 'acomodo';
+        let licenciasCache = [];
+        let isFirebaseReady = false;
 
-        .app-card-header i {
-            font-size: 2.5rem;
-            color: var(--primary);
-        }
+        function verificarPassword() {
+            const passInput = document.getElementById('input-password');
+            const errorMsg = document.getElementById('auth-error');
 
-        .app-card-body {
-            padding: 1.75rem;
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-        }
-
-        .app-card-body h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 0.75rem;
-        }
-
-        .app-card-body p {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            margin-bottom: 1.5rem;
-            flex: 1;
-        }
-
-        .btn-access {
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.5rem;
-            background-color: var(--primary);
-            color: white;
-            text-decoration: none;
-            padding: 0.75rem 1.25rem;
-            border-radius: 6px;
-            font-weight: 500;
-            transition: background-color 0.2s ease;
-            text-align: center;
-        }
-
-        .btn-access:hover {
-            background-color: var(--primary-dark);
-        }
-
-        footer {
-            background-color: #0f172a;
-            color: #94a3b8;
-            text-align: center;
-            padding: 2rem 1.5rem;
-            font-size: 0.9rem;
-            border-top: 1px solid #1e293b;
-        }
-
-        footer p {
-            margin-bottom: 0.4rem;
-        }
-
-        footer .legal {
-            color: #64748b;
-            font-size: 0.85rem;
-        }
-
-        @media (max-width: 640px) {
-            .instructions-card {
-                grid-template-columns: 1fr;
-                text-align: center;
-                justify-items: center;
+            if (passInput.value === MASTER_PASS) {
+                sessionStorage.setItem('hub_auth', 'authenticated');
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-panel').classList.remove('hidden');
+                passInput.value = '';
+                errorMsg.classList.add('hidden');
+                
+                if (isFirebaseReady) {
+                    actualizarEstadoConexion();
+                    cargarLicencias();
+                }
+            } else {
+                errorMsg.classList.remove('hidden');
+                passInput.focus();
+                passInput.select();
             }
         }
-    </style>
-</head>
-<body>
 
-    <header>
-        <div class="header-container">
-            <span class="badge">Portal Exclusivo</span>
-            <h1>Plataforma Educativa</h1>
-            <p>Herramientas digitales profesionales diseñadas exclusivamente para instructores y profesores.</p>
-        </div>
-    </header>
+        function cerrarSesion() {
+            sessionStorage.removeItem('hub_auth');
+            document.getElementById('main-panel').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('input-password').value = '';
+        }
 
-    <main>
-        <div class="instructions-card">
-            <i class="fa-solid fa-circle-exclamation"></i>
-            <div class="instructions-content">
-                <h3>Instrucciones de Acceso</h3>
-                <p>Para ingresar y utilizar estas aplicaciones, es necesario contar con un <strong>código de acceso válido por el tiempo definido</strong>. Si aún no cuenta con su código o requiere renovación, por favor <strong>acuda con su promotor</strong>.</p>
-            </div>
-        </div>
+        // Revisar si ya había iniciado sesión en esta pestaña
+        window.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('hub_auth') === 'authenticated') {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-panel').classList.remove('hidden');
+            }
+        });
 
-        <div class="important-notice">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            <p><strong>IMPORTANTE:</strong> LA APLICACIÓN SOLO ESTARÁ DISPONIBLE EN EL DISPOSITIVO EN EL CUAL SE UTILIZÓ EL CÓDIGO DE SUSCRIPCIÓN.</p>
-        </div>
+        // Configuración visual y operativa por aplicación
+        const APP_CONFIG = {
+            acomodo: {
+                name: 'Acomodo Matemático',
+                projectId: 'apps-educativas-suscripciones',
+                bodyBg: 'bg-[#050b14]',
+                cardBg: 'bg-[#0b1626]',
+                innerBg: 'bg-[#070f1b]',
+                borderHeader: 'border-indigo-500/40',
+                cardBorder: 'border-slate-800',
+                accentText: 'text-indigo-400',
+                tagClass: 'bg-indigo-500/20 border border-indigo-400/30 text-indigo-300',
+                btnColor: 'bg-indigo-500 hover:bg-indigo-400 text-slate-950',
+                tabActive: 'bg-indigo-600 text-white shadow-lg',
+                codeColor: 'text-indigo-300',
+                fontClass: 'font-sans',
+                prefixFn: () => {
+                    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                    let r = '';
+                    for (let i = 0; i < 4; i++) r += chars.charAt(Math.floor(Math.random() * chars.length));
+                    return `SUB-ACOM-${r}`;
+                }
+            },
+            jeopardy: {
+                name: 'Jeopardy Live Show',
+                projectId: 'jeopardyjrh',
+                bodyBg: 'bg-[#000533]',
+                cardBg: 'bg-[#000842]',
+                innerBg: 'bg-[#000324]',
+                borderHeader: 'border-[#FFCC00]',
+                cardBorder: 'border-blue-900',
+                accentText: 'text-[#FFCC00]',
+                tagClass: 'bg-blue-600/30 border border-blue-500/40 text-[#FFCC00]',
+                btnColor: 'bg-[#FFCC00] hover:bg-yellow-400 active:bg-yellow-500 text-[#000533]',
+                tabActive: 'bg-[#FFCC00] text-[#000533] font-black shadow-lg',
+                codeColor: 'text-[#FFCC00]',
+                fontClass: 'font-cinzel',
+                prefixFn: () => {
+                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                    let r = 'JEO-';
+                    for (let i = 0; i < 4; i++) r += chars.charAt(Math.floor(Math.random() * chars.length));
+                    return r;
+                }
+            },
+            methaplan: {
+                name: 'Methaplan',
+                projectId: 'methaplan',
+                bodyBg: 'bg-slate-950',
+                cardBg: 'bg-slate-900',
+                innerBg: 'bg-slate-950',
+                borderHeader: 'border-slate-800',
+                cardBorder: 'border-slate-800',
+                accentText: 'text-slate-300',
+                tagClass: 'bg-indigo-600/30 border border-indigo-500/40 text-indigo-400',
+                btnColor: 'bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white',
+                tabActive: 'bg-indigo-600 text-white shadow-lg',
+                codeColor: 'text-white',
+                fontClass: 'font-sans',
+                prefixFn: () => {
+                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                    let r = 'SUB-';
+                    for (let i = 0; i < 6; i++) r += chars.charAt(Math.floor(Math.random() * chars.length));
+                    return r;
+                }
+            },
+            reduccion: {
+                name: 'Reducción Cuadrícula',
+                projectId: 'reduccion-cuadricula-3f6b0',
+                bodyBg: 'bg-[#050b14]',
+                cardBg: 'bg-[#0b1626]',
+                innerBg: 'bg-[#070f1b]',
+                borderHeader: 'border-cyan-500/40',
+                cardBorder: 'border-slate-800',
+                accentText: 'text-cyan-400',
+                tagClass: 'bg-cyan-500/20 border border-cyan-400/30 text-cyan-300',
+                btnColor: 'bg-cyan-500 hover:bg-cyan-400 active:bg-cyan-600 text-slate-950',
+                tabActive: 'bg-cyan-600 text-white shadow-lg',
+                codeColor: 'text-cyan-300',
+                fontClass: 'font-sans',
+                prefixFn: () => {
+                    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                    let r = '';
+                    for (let i = 0; i < 4; i++) r += chars.charAt(Math.floor(Math.random() * chars.length));
+                    return `SUB-REDUC-${r}`;
+                }
+            }
+        };
 
-        <h2 class="section-title"><i class="fa-solid fa-cubes"></i> Aplicaciones Disponibles</h2>
+        window.addEventListener('firebase-hub-ready', () => {
+            isFirebaseReady = true;
+            if (sessionStorage.getItem('hub_auth') === 'authenticated') {
+                actualizarEstadoConexion();
+                cargarLicencias();
+            }
+        });
 
-        <div class="apps-grid">
-            <!-- Aplicación 1 -->
-            <div class="app-card">
-                <div class="app-card-header">
-                    <i class="fa-solid fa-dice"></i>
-                </div>
-                <div class="app-card-body">
-                    <h3>Acomodo Matemático</h3>
-                    <p>Juego matemático interactivo basado en el uso de dados D10, cinta de cálculo, inventario limitado de números y múltiples modalidades dinámicas para el aula.</p>
-                    <a href="https://acomodomatematico.buenosmalosconsejos.com/" target="_blank" rel="noopener noreferrer" class="btn-access">
-                        Acceder a la Aplicación <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
-                </div>
-            </div>
+        function actualizarEstadoConexion() {
+            const badge = document.getElementById('status-badge');
+            const conf = APP_CONFIG[currentApp];
+            badge.className = "px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-medium flex items-center gap-2";
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Conectado a (${conf.projectId})`;
+        }
 
-            <!-- Aplicación 2 -->
-            <div class="app-card">
-                <div class="app-card-header">
-                    <i class="fa-solid fa-chalkboard-user"></i>
-                </div>
-                <div class="app-card-body">
-                    <h3>Methaplan MHG</h3>
-                    <p>Plataforma interactiva y colaborativa en tiempo real para sesiones metodológicas con roles de profesor y estudiantes, sincronización QR, pizarras dinámicas y reportes.</p>
-                    <a href="https://methaplanmhg.buenosmalosconsejos.com/" target="_blank" rel="noopener noreferrer" class="btn-access">
-                        Acceder a la Aplicación <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
-                </div>
-            </div>
+        function cambiarPestana(appKey) {
+            if (currentApp === appKey) return;
+            currentApp = appKey;
+            const conf = APP_CONFIG[appKey];
 
-            <!-- Aplicación 3 -->
-            <div class="app-card">
-                <div class="app-card-header">
-                    <i class="fa-solid fa-table-cells"></i>
-                </div>
-                <div class="app-card-body">
-                    <h3>Cuadrícula</h3>
-                    <p>Aplicación interactiva de cálculo mental orientada a dominar el truco de reducir a un dígito y calcular la raíz digital en cuadrículas numéricas.</p>
-                    <a href="https://cuadricula.buenosmalosconsejos.com/" target="_blank" rel="noopener noreferrer" class="btn-access">
-                        Acceder a la Aplicación <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
-                </div>
-            </div>
+            // 1. Resetear estilos de pestañas
+            ['acomodo', 'jeopardy', 'methaplan', 'reduccion'].forEach(key => {
+                const tab = document.getElementById(`tab-${key}`);
+                tab.className = "flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800/50";
+            });
+            document.getElementById(`tab-${appKey}`).className = `flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${conf.tabActive}`;
 
-            <!-- Aplicación 4 -->
-            <div class="app-card">
-                <div class="app-card-header">
-                    <i class="fa-solid fa-circle-question"></i>
-                </div>
-                <div class="app-card-body">
-                    <h3>Jeopardy</h3>
-                    <p>Dinámica de concurso y trivia interactiva diseñada para evaluar conocimientos en el aula mediante paneles de preguntas, categorías y puntuaciones por equipo.</p>
-                    <a href="https://jeopardy.buenosmalosconsejos.com/" target="_blank" rel="noopener noreferrer" class="btn-access">
-                        Acceder a la Aplicación <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </main>
+            // 2. Modificar tema visual
+            document.body.className = `${conf.bodyBg} text-slate-100 font-sans min-h-screen p-4 md:p-8 transition-colors duration-300`;
 
-    <footer>
-        <p>&copy; 2026 Robert Pacheco, Buenos Malos Consejos. Todos los derechos reservados.</p>
-        <p class="legal">Aplicaciones de uso exclusivo para instructores y profesores autorizados bajo suscripción.</p>
-    </footer>
+            const headerCard = document.getElementById('header-card');
+            headerCard.className = `${conf.cardBg} border-2 ${conf.borderHeader} rounded-2xl p-6 shadow-xl flex flex-col md:flex-row justify-between items-center gap-4 transition-all`;
 
+            const formCard = document.getElementById('form-card');
+            formCard.className = `${conf.cardBg} border ${conf.cardBorder} rounded-2xl p-6 shadow-xl space-y-4 transition-all`;
+
+            const tableCard = document.getElementById('table-card');
+            tableCard.className = `${conf.cardBg} border ${conf.cardBorder} rounded-2xl p-6 shadow-xl space-y-4 transition-all`;
+
+            const tableHeadRow = document.getElementById('table-head-row');
+            tableHeadRow.className = `${conf.innerBg} text-slate-300 border-b ${conf.cardBorder}`;
+
+            const tableWrapper = document.getElementById('table-wrapper');
+            tableWrapper.className = `overflow-x-auto rounded-xl border ${conf.cardBorder}`;
+
+            // 3. Modificar textos, tags y botones
+            document.getElementById('header-title').className = `text-2xl font-black text-white tracking-tight flex items-center gap-2 ${conf.fontClass}`;
+            document.getElementById('header-tag').className = `text-xs px-2.5 py-1 ${conf.tagClass} rounded-full font-mono font-bold`;
+            document.getElementById('header-tag').innerText = conf.name;
+            document.getElementById('header-desc').innerHTML = `Sincronizado con Firestore en <b>${conf.projectId}</b>.`;
+
+            document.getElementById('form-title').className = `text-sm font-bold uppercase tracking-wider ${conf.accentText} ${conf.fontClass}`;
+            document.getElementById('table-title').className = `text-sm font-bold uppercase tracking-wider ${conf.accentText} ${conf.fontClass}`;
+            document.getElementById('btn-refresh').className = `text-xs ${conf.accentText} hover:underline flex items-center gap-1 cursor-pointer`;
+
+            document.getElementById('btn-generate').className = `flex-1 py-3 ${conf.btnColor} font-black uppercase text-xs rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50`;
+
+            // 4. Cambiar fondo de selects/inputs
+            const selects = ['duration-select', 'quantity-input'];
+            selects.forEach(id => {
+                const el = document.getElementById(id);
+                el.className = `w-full px-4 py-2.5 ${conf.innerBg} border border-slate-700 focus:border-indigo-400 rounded-xl text-sm text-white focus:outline-none`;
+            });
+
+            if (isFirebaseReady && sessionStorage.getItem('hub_auth') === 'authenticated') {
+                actualizarEstadoConexion();
+                cargarLicencias();
+            }
+        }
+
+        async function generarYGuardarLicencias() {
+            if (!isFirebaseReady) {
+                alert('Firebase aún no está listo. Espera un momento.');
+                return;
+            }
+
+            const db = window.dbs[currentApp];
+            const fs = window.fs;
+            const conf = APP_CONFIG[currentApp];
+
+            const duration = parseInt(document.getElementById('duration-select').value);
+            const quantity = parseInt(document.getElementById('quantity-input').value) || 1;
+            const btn = document.getElementById('btn-generate');
+            
+            btn.disabled = true;
+            btn.innerText = 'Guardando en Firestore...';
+
+            try {
+                for (let i = 0; i < quantity; i++) {
+                    const codigo = conf.prefixFn();
+                    const docRef = fs.doc(db, "suscripciones", codigo);
+
+                    let payload = {};
+                    if (currentApp === 'acomodo') {
+                        payload = {
+                            activo: true,
+                            app: "acomodo-matematico",
+                            duracionDias: duration,
+                            usado: false,
+                            usadoPor: "",
+                            fechaActivacion: "",
+                            createdAt: fs.serverTimestamp()
+                        };
+                    } else if (currentApp === 'jeopardy') {
+                        payload = {
+                            Activo: true,
+                            activo: true,
+                            duracionDias: duration,
+                            usado: false,
+                            usadoPor: "",
+                            Fechadeactivacion: "",
+                            createdAt: fs.serverTimestamp()
+                        };
+                    } else if (currentApp === 'methaplan') {
+                        payload = {
+                            codigo: codigo,
+                            duracionDias: duration,
+                            usada: false,
+                            createdAt: fs.serverTimestamp()
+                        };
+                    } else if (currentApp === 'reduccion') {
+                        payload = {
+                            activo: true,
+                            duracionDias: duration,
+                            usado: false,
+                            usadoPor: "",
+                            fechaActivacion: "",
+                            createdAt: fs.serverTimestamp()
+                        };
+                    }
+
+                    await fs.setDoc(docRef, payload);
+                }
+                alert(`¡Se generaron ${quantity} códigos en ${conf.name}!`);
+                cargarLicencias();
+            } catch (error) {
+                console.error("Error al guardar:", error);
+                alert('Error al guardar en Firestore: ' + (error.message || error));
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '✨ Generar en Firestore';
+            }
+        }
+
+        async function cargarLicencias() {
+            if (!isFirebaseReady) return;
+            const db = window.dbs[currentApp];
+            const fs = window.fs;
+            const conf = APP_CONFIG[currentApp];
+            const tbody = document.getElementById('licenses-table-body');
+            
+            tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">Actualizando lista de ${conf.name}...</td></tr>`;
+
+            try {
+                const q = fs.query(fs.collection(db, "suscripciones"), fs.orderBy("createdAt", "desc"));
+                const querySnapshot = await fs.getDocs(q);
+                licenciasCache = [];
+
+                querySnapshot.forEach((docSnap) => {
+                    licenciasCache.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                if (licenciasCache.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">No hay licencias registradas en esta aplicación.</td></tr>`;
+                    return;
+                }
+
+                const checkUsado = (l) => {
+                    const email = (l.usadoPor && typeof l.usadoPor === 'string' && l.usadoPor.trim() !== "") 
+                        ? l.usadoPor.trim() 
+                        : (l.usuario && typeof l.usuario === 'string' && l.usuario.trim() !== "" ? l.usuario.trim() : null);
+                    
+                    return (l.usado === true) || 
+                           (l.usada === true) || 
+                           (email !== null) || 
+                           (l.activo === false && l.Activo === false);
+                };
+
+                licenciasCache.sort((a, b) => {
+                    const aUsado = checkUsado(a) ? 1 : 0;
+                    const bUsado = checkUsado(b) ? 1 : 0;
+                    return aUsado - bUsado;
+                });
+
+                tbody.innerHTML = licenciasCache.map(l => {
+                    const codigoVal = l.codigo || l.id;
+                    const fecha = l.createdAt?.toDate ? l.createdAt.toDate().toLocaleString() : 'Recién creado';
+                    
+                    const emailUsuario = (l.usadoPor && typeof l.usadoPor === 'string' && l.usadoPor.trim() !== "") 
+                        ? l.usadoPor.trim() 
+                        : (l.usuario && typeof l.usuario === 'string' && l.usuario.trim() !== "" ? l.usuario.trim() : null);
+
+                    const isUsado = checkUsado(l);
+
+                    const estadoBadge = isUsado 
+                        ? `<div class="inline-flex flex-col items-start gap-1 py-1">
+                             <span class="px-2 py-0.5 bg-rose-950/70 text-rose-400 border border-rose-800/50 rounded-md font-semibold text-[11px] flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Usada
+                             </span>
+                             ${emailUsuario ? `<span class="text-[11px] text-slate-300 font-mono flex items-center gap-1 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800">👤 ${emailUsuario}</span>` : ''}
+                           </div>`
+                        : `<span class="px-2 py-0.5 bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 rounded-md font-medium flex items-center gap-1.5 w-fit">
+                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Disponible
+                           </span>`;
+                    
+                    const duracionTexto = l.duracionDias === 9999 ? 'Permanente' : `${l.duracionDias} días`;
+
+                    return `
+                        <tr class="hover:bg-slate-900/40 transition-colors ${isUsado ? 'opacity-60 bg-slate-950/30' : ''}">
+                            <td class="p-3 font-mono font-bold ${conf.codeColor}">${codigoVal}</td>
+                            <td class="p-3 text-slate-200">${duracionTexto}</td>
+                            <td class="p-3">${estadoBadge}</td>
+                            <td class="p-3 text-slate-400">${fecha}</td>
+                            <td class="p-3 text-right">
+                                <button onclick="eliminarLicencia('${l.id}')" class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 rounded-lg text-xs transition-all cursor-pointer">
+                                    🗑️ Borrar
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error("Error al cargar:", error);
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-rose-400">Error al leer Firestore (${conf.projectId}). Revisa tus reglas de seguridad.</td></tr>`;
+            }
+        }
+
+        async function eliminarLicencia(idDoc) {
+            if (!confirm(`¿Estás seguro de eliminar el código ${idDoc} de Firestore?`)) return;
+
+            try {
+                const db = window.dbs[currentApp];
+                const fs = window.fs;
+                await fs.deleteDoc(fs.doc(db, "suscripciones", idDoc));
+                cargarLicencias();
+            } catch (error) {
+                console.error("Error al borrar:", error);
+                alert('Hubo un error al eliminar el código de Firestore.');
+            }
+        }
+
+        function descargarCSV() {
+            if (licenciasCache.length === 0) {
+                alert('No hay licencias para exportar en esta aplicación.');
+                return;
+            }
+
+            const conf = APP_CONFIG[currentApp];
+            let csvContent = "";
+
+            if (currentApp === 'methaplan') {
+                csvContent = "data:text/csv;charset=utf-8,Codigo,DuracionDias,Usada,Usuario,FechaCreacion\n";
+                licenciasCache.forEach(l => {
+                    const codigoVal = l.codigo || l.id;
+                    const fecha = l.createdAt?.toDate ? l.createdAt.toDate().toISOString() : '';
+                    const usr = l.usadoPor || l.usuario || '';
+                    csvContent += `${codigoVal},${l.duracionDias},${l.usada || false},${usr},${fecha}\n`;
+                });
+            } else {
+                csvContent = "data:text/csv;charset=utf-8,Codigo,DuracionDias,Usado,UsadoPor,FechaCreacion\n";
+                licenciasCache.forEach(l => {
+                    const codigoVal = l.id;
+                    const fecha = l.createdAt?.toDate ? l.createdAt.toDate().toISOString() : '';
+                    const isUsd = (l.usado === true) || (l.usadoPor && l.usadoPor.trim() !== '') || (l.activo === false);
+                    csvContent += `${codigoVal},${l.duracionDias},${isUsd},${l.usadoPor || ''},${fecha}\n`;
+                });
+            }
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `licencias_${currentApp}_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
 </body>
 </html>
